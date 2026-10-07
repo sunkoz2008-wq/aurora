@@ -1,0 +1,50 @@
+name: Build Aurora VST3
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure (macOS, universal arm64 + x86_64)
+        if: runner.os == 'macOS'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Signature ad-hoc (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --force --deep -s - build/Aurora_artefacts/Release/VST3/Aurora.vst3
+
+      - name: Archive (macOS)
+        if: runner.os == 'macOS'
+        run: tar -czf Aurora-macOS-VST3.tar.gz -C build/Aurora_artefacts/Release/VST3 Aurora.vst3
+
+      - name: Upload (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aurora-Windows-VST3
+          path: build/Aurora_artefacts/Release/VST3/Aurora.vst3
+
+      - name: Upload (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aurora-macOS-VST3
+          path: Aurora-macOS-VST3.tar.gz
