@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "Aurora VST3"
+git branch -M main
+git remote add origin https://github.com/sunkoz2008-wq/Aurora.git
+git push -u origin main
